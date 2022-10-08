@@ -1,0 +1,169 @@
+﻿@page "/products"
+
+<PageTitle>Products</PageTitle>
+
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@using Microsoft.AspNetCore.SignalR.Client
+@using Pss.Reference.Common.Extensions
+@using Pss.Reference.Contracts.Client.Products
+@using Pss.Reference.Common
+@using Pss.Reference.Contracts.Logic.Notifications
+@using Pss.Reference.Web.Extensions
+
+<h1>Products</h1>
+
+@if (_products == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row" style="margin-bottom: 10px;">
+        <div class="col-md-1">
+            <RadzenDropDown TValue="string" Data=@(ProductTypes) @bind-Value=SelectedProductType />
+        </div>
+        <div class="col-md-1">
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="add" Text="New" Click="@NewProduct" />
+        </div>
+        <div class="col-md-1">
+            <RadzenButton ButtonStyle="ButtonStyle.Secondary" Icon="search" Text="Find" Click="@FindProduct" />
+        </div>
+    </div>
+
+    <RadzenDataGrid AllowFiltering="false" AllowColumnResize="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="20"
+                AllowSorting="true" Data="@_products" TItem="ProductBase" ColumnWidth="200px"
+                SelectionMode="DataGridSelectionMode.Single" @bind-Value=@SelectedProducts RowDoubleClick=@ProductSelected>
+        <Columns>
+            <RadzenDataGridColumn TItem="ProductBase" Property="ProductId" Title="Product Id" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="ProductType.ToString()" Title="Type" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="Manufacturer" Title="Manufacturer" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="StockKeepingUnit" Title="SKU" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="Name" Title="Name" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="Description" Title="Description" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="SellPrice" Title="Price" FormatString="{0:C}" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="CurrentQuantity" Title="Quantity" />
+            <RadzenDataGridColumn TItem="ProductBase" Property="ReorderQuantity" Title="Reorder Quantity" />
+            <RadzenDataGridColumn Width="160px" TItem="ProductBase" Property="ProductId" Title="Delete">
+                <Template Context="data">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="delete" Class="m-1" Click=@(() => RemoveProduct(data.ProductId.Value)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private ProductBase[] _products;
+    private HubConnection _hubConnection;
+    private IList<ProductBase> SelectedProducts { get; set; }
+    private static IEnumerable<string> ProductTypes => Enum.GetNames(typeof(ProductType)).Where(pt => pt != ProductType.Unknown.ToString());
+    private string SelectedProductType { get; set; } = "Commodity";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+
+        _hubConnection = new HubConnectionBuilder()
+        .WithUrl($"{Configuration["ApiRootUrl"]}{Constants.SignalR.HubPath}")
+        .Build();
+
+        _hubConnection.On<string, int>(Constants.SignalR.ReceiveMethod, async (message, productId) =>
+        {
+            NotificationService.Notify(NotificationSeverity.Info, $"Product Id: {productId}:  ", message, 4000);
+            await LoadProducts();
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private async Task NewProduct()
+    {
+        ProductType productType = Enum.Parse<ProductType>(SelectedProductType);
+        switch (productType)
+        {
+            case ProductType.Commodity:
+                await DialogService.OpenAsync<Commodity>("New Commodity", null,
+                new DialogOptions() { Width = "700px", Height = "600px", Resizable = false, Draggable = true });
+                break;
+
+            case ProductType.SalonProduct:
+                await DialogService.OpenAsync<SalonProduct>("New Salon Product", null,
+                new DialogOptions() { Width = "700px", Height = "645px", Resizable = false, Draggable = true });
+                break;
+
+            case ProductType.Vehicle:
+                await DialogService.OpenAsync<Vehicle>("New Vehicle", null,
+                new DialogOptions() { Width = "700px", Height = "855px", Resizable = false, Draggable = true });
+                break;
+
+            default: break;
+        }
+    }
+
+    private async Task FindProduct()
+    {
+        var request = await DialogService.OpenAsync<FindProduct>("Find Product", null,
+        new DialogOptions() { Width = "700px", Height = "735px", Resizable = false, Draggable = true });
+
+        if (request != null)
+        {
+            await LoadProducts(request);
+        }
+    }
+
+    private async Task ProductSelected(DataGridRowMouseEventArgs<ProductBase> args)
+    {
+        var item = args.Data;
+        if (item != null)
+        {
+            int productId = item.ProductId.Value;
+            var dictionary = new Dictionary<string, object> { { "ProductId", productId } };
+
+            switch (item.ProductType)
+            {
+                case ProductType.Commodity:
+                    await DialogService.OpenAsync<Commodity>($"Commodity - Product Id # {productId}",
+                    dictionary,
+                    new DialogOptions() { Width = "700px", Height = "600px", Resizable = false, Draggable = true });
+                    break;
+
+                case ProductType.SalonProduct:
+                    await DialogService.OpenAsync<SalonProduct>($"Salon Product - Product Id # {productId}",
+                    dictionary,
+                    new DialogOptions() { Width = "700px", Height = "645px", Resizable = false, Draggable = true });
+                    break;
+
+                case ProductType.Vehicle:
+                    await DialogService.OpenAsync<Vehicle>($"Vehicle - Product Id # {productId}",
+                    dictionary,
+                    new DialogOptions() { Width = "700px", Height = "855px", Resizable = false, Draggable = true });
+                    break;
+
+                default: break;
+            }
+        }
+    }
+
+    private async Task RemoveProduct(int productId)
+    {
+        using var response = await Http.DeleteAsync($"/Products/Remove/{ productId }");
+
+        if (!response.IsSuccessStatusCode)
+            await response.DisplayErrorNotification(NotificationService);
+    }
+
+    private async Task LoadProducts(FindRequest request = null)
+    {
+        request ??= new();
+        using var response = await Http.PostAsJsonAsync("/Products/Find", request);
+
+        if (response.IsSuccessStatusCode)
+            _products = await response.FromJson<ProductBase[]>();
+        else
+            await response.DisplayErrorNotification(NotificationService);
+    }
+ }

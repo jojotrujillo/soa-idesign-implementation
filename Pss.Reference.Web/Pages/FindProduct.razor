@@ -1,0 +1,139 @@
+﻿@page "/findproduct"
+
+<PageTitle>Find Product</PageTitle>
+
+@inject HttpClient Http
+@inject DialogService DialogService
+
+@using Pss.Reference.Contracts.Client.Products
+
+<style>
+    form .row {
+        margin-bottom: 16px;
+    }
+</style>
+
+    <RadzenTemplateForm Data="@_request" Submit="@((FindRequest request) => { Submit(request); })">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <RadzenFieldset>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Product Id" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="ProductId" TValue="int?" @bind-Value=@_request.ProductId />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Product Type" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenDropDown TValue="int" Data=@(ProductTypes) TextProperty="Name" ValueProperty="Value" Change=@OnChange />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Name" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Name" @bind-Value=@_request.Name />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Description" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Description" @bind-Value=@_request.Description />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Manufacturer" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Manufacturer" @bind-Value=@_request.Manufacturer />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="SKU" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="SKU" @bind-Value=@_request.StockKeepingUnit />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Price" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Price" TValue="decimal?" @bind-Value=@_request.SellPrice />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Quantity" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Quantity" TValue="int?" @bind-Value=@_request.CurrentQuantity />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Reorder Quantity" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Reorder Quantity" TValue="int?" @bind-Value=@_request.ReorderQuantity />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Deleted" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenCheckBox Name="IsDeleted" TValue="bool?" TriState="false" @bind-Value=@_request.IsDeleted />
+                        </div>
+                    </div>
+                </RadzenFieldset>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-12 d-flex align-items-end justify-content-center" style="margin-top: 16px;">
+                <RadzenButton ButtonType="ButtonType.Submit" Icon="search" Text="Find" />
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="cancel" style="display: inline-block; margin-left: 10px;" Text="Cancel" Click="@Cancel" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+
+@code {
+    private FindRequest _request = new();
+
+    private class ProductTypeClass
+    {
+        public int Value { get; set; }
+        public string Name { get; set; }
+    }
+
+    private static IEnumerable<ProductTypeClass> ProductTypes => Enum.GetValues<ProductType>()
+        .Cast<ProductType>()
+        .Where(t => t != ProductType.Unknown)
+        .Select(t => new ProductTypeClass { Name = t.ToString(), Value = (int)t });
+
+    private void OnChange(object value)
+    {
+        _request.ProductType = (ProductType)value;
+    }
+
+    private void Submit(FindRequest request)
+    {
+        DialogService.Close(request);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

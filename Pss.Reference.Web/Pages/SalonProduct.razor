@@ -1,0 +1,149 @@
+﻿@page "/salonproduct"
+
+<PageTitle>Salon Product</PageTitle>
+
+@inject HttpClient Http
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+@using Client = Pss.Reference.Contracts.Client.Products
+@using Pss.Reference.Common.Extensions
+@using Pss.Reference.Web.Extensions
+
+<style>
+    form .row {
+        margin-bottom: 16px;
+    }
+</style>
+
+@if (_salon == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <RadzenTemplateForm Data="@_salon" Submit="@((Client.SalonProduct args) => { Submit(args); })">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <RadzenFieldset>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Name" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Name" @bind-Value=@_salon.Name />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Description" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Description" @bind-Value=@_salon.Description />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Vendor" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Vendor" @bind-Value=@_salon.Vendor />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Manufacturer" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Manufacturer" @bind-Value=@_salon.Manufacturer />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="SKU" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="SKU" @bind-Value=@_salon.StockKeepingUnit />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Price" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Price" TValue="decimal" @bind-Value=@_salon.SellPrice />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Quantity" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Quantity" TValue="int" @bind-Value=@_salon.CurrentQuantity />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Reorder Quantity" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Reorder Quantity" TValue="int" @bind-Value=@_salon.ReorderQuantity />
+                        </div>
+                    </div>
+                </RadzenFieldset>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-12 d-flex align-items-end justify-content-center" style="margin-top: 16px;">
+                <RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="Save" />
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="cancel" style="display: inline-block; margin-left: 10px;" Text="Cancel" Click="@Cancel" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+}
+
+@code {
+    [Parameter] public int? ProductId { get; set; }
+    public Client.SalonProduct _salon = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ProductId.HasValue)
+        {
+            var request = new Client.FindRequest { ProductId = (int)ProductId, ProductType = Client.ProductType.SalonProduct };
+            using var response = await Http.PostAsJsonAsync("/Products/Find", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var products = await response.FromJson<Client.SalonProduct[]>();
+                _salon = products.FirstOrDefault();
+            }
+            else
+            {
+                await response.DisplayErrorNotification(NotificationService);
+            }
+        }
+        else
+        {
+            _salon = new Client.SalonProduct { ProductType = Client.ProductType.SalonProduct };
+        }
+    }
+
+    private void Submit(Client.SalonProduct args)
+    {
+        InvokeAsync(async () =>
+        {
+            using var response = await Http.PostAsJsonAsync("/Products/SalonProduct/Store", _salon);
+
+            if (!response.IsSuccessStatusCode)
+                await response.DisplayErrorNotification(NotificationService);
+            else
+                DialogService.Close(true);
+        });
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+}

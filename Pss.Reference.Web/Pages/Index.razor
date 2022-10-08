@@ -1,0 +1,29 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+
+@if (_testMeResult == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h4>Test Me</h4>
+    <p><em>@_testMeResult</em></p>
+}
+
+@code {
+    private string _testMeResult = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _testMeResult = await Http.GetStringAsync("TestMe");
+    }
+}

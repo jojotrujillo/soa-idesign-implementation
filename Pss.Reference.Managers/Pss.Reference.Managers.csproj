@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.4" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Pss.Reference.Accessors\Pss.Reference.Accessors.csproj" />
+		<ProjectReference Include="..\Pss.Reference.Common\Pss.Reference.Common.csproj" />
+		<ProjectReference Include="..\Pss.Reference.Contracts.Client\Pss.Reference.Contracts.Client.csproj" />
+		<ProjectReference Include="..\Pss.Reference.Contracts.Logic\Pss.Reference.Contracts.Logic.csproj" />
+		<ProjectReference Include="..\Pss.Reference.Engines\Pss.Reference.Engines.csproj" />
+		<ProjectReference Include="..\Pss.Reference.Utilities\Pss.Reference.Utilities.csproj" />
+	</ItemGroup>
+
+</Project>

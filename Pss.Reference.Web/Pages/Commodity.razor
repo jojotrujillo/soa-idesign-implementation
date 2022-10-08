@@ -1,0 +1,141 @@
+﻿@page "/commodity"
+
+<PageTitle>Commodity</PageTitle>
+
+@inject HttpClient Http
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+@using Client = Pss.Reference.Contracts.Client.Products
+@using Pss.Reference.Common.Extensions
+@using Pss.Reference.Web.Extensions
+
+<style>
+    form .row {
+        margin-bottom: 16px;
+    }
+</style>
+
+@if (_commodity == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <RadzenTemplateForm Data="@_commodity" Submit="@((Client.Commodity args) => { Submit(args); })">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <RadzenFieldset>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Name" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Name" @bind-Value=@_commodity.Name />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Description" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Description" @bind-Value=@_commodity.Description />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Manufacturer" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="Manufacturer" @bind-Value=@_commodity.Manufacturer />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="SKU" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenTextBox style="width: 100%;" Name="SKU" @bind-Value=@_commodity.StockKeepingUnit />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Price" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Price" TValue="decimal" @bind-Value=@_commodity.SellPrice />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Quantity" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Quantity" TValue="int" @bind-Value=@_commodity.CurrentQuantity />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 align-items-center d-flex">
+                            <RadzenLabel Text="Reorder Quantity" />
+                        </div>
+                        <div class="col-md-8">
+                            <RadzenNumeric style="width: 100%;" Name="Reorder Quantity" TValue="int" @bind-Value=@_commodity.ReorderQuantity />
+                        </div>
+                    </div>
+                </RadzenFieldset>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-12 d-flex align-items-end justify-content-center" style="margin-top: 16px;">
+                <RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="Save" />
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="cancel" style="display: inline-block; margin-left: 10px;" Text="Cancel" Click="@Cancel" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+}
+
+@code {
+    [Parameter] public int? ProductId { get; set; }
+    public Client.Commodity _commodity = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ProductId.HasValue)
+        {
+            var request = new Client.FindRequest { ProductId = (int)ProductId, ProductType = Client.ProductType.Commodity };
+            using var response = await Http.PostAsJsonAsync("/Products/Find", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var products = await response.FromJson<Client.Commodity[]>();
+                _commodity = products.FirstOrDefault();
+            }
+            else
+            {
+                await response.DisplayErrorNotification(NotificationService);
+            }
+        }
+        else
+        {
+            _commodity = new Client.Commodity { ProductType = Client.ProductType.Commodity };
+        }
+    }
+
+    private void Submit(Client.Commodity args)
+    {
+        InvokeAsync(async () =>
+        {
+            using var response = await Http.PostAsJsonAsync("/Products/Commodity/Store", _commodity);
+
+            if (!response.IsSuccessStatusCode)
+                await response.DisplayErrorNotification(NotificationService);
+            else
+                DialogService.Close(true);
+        });
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+}
