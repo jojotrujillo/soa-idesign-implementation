@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
 namespace Pss.Reference.Common.Extensions;
 
@@ -41,7 +42,7 @@ public static class StringExtensions
 		if (value == null)
 			return null;
 
-		if (!DateTime.TryParse(value, out var result))
+		if (!DateTime.TryParseExact(value, "M/dd/yyyy h:mm:ss tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
 			return null;
 
 		return result;
