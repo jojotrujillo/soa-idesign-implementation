@@ -1,5 +1,6 @@
 ﻿using Pss.Reference.Common.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Globalization;
 
 namespace Pss.Reference.Common.Tests.UnitTests;
 
@@ -56,7 +57,7 @@ public class StringExtensionsTests
 		var result = val.ToDateTime();
 
 		// ASSERT
-		Assert.AreEqual(DateTime.Parse(val), result);
+		Assert.AreEqual(DateTime.ParseExact(val, "M/dd/yyyy h:mm:ss tt", CultureInfo.InvariantCulture, DateTimeStyles.None), result);
 	}
 
 	[TestMethod]
