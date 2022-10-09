@@ -15,6 +15,15 @@ builder.Logging.AddDebug();
 builder.Logging.AddConsole();
 
 // Add services to the container.
+builder.Services.AddCors(options =>
+{
+	options.AddDefaultPolicy(
+		build =>
+		{
+			build.WithOrigins("http://localhost:3000");
+		});
+});
+
 builder.Services
 	.AddControllers()
 	// Enables polymorphic serialization of the derived type properties in the JSON response.
@@ -53,6 +62,8 @@ app.AddExceptionHandler(loggerFactory);
 app.UseSwagger();
 app.UseSwaggerUI();
 //}
+
+app.UseCors();
 
 app.UseHttpsRedirection();
 
